@@ -1,5 +1,5 @@
 {
-  description = "A compiler and linker for (e)Z80 targets.";
+  description = "clevor's packages";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -7,14 +7,18 @@
       url = "github:jacobly0/llvm-project";
       flake = false;
     };
-    flake-utils.url = "github:numtide/flake-utils";
+    toolchain = {
+      flake = false;
+      type = "git";
+      url = "https://github.com/CE-Programming/toolchain";
+      submodules = true;
+    };
   };
 
-  outputs = { nixpkgs, llvm-ez80, flake-utils, ... }:
-    flake-utils.lib.eachDefaultSystem (system: rec {
-      packages.llvm-ez80 = packages.default;
-      packages.default = with import nixpkgs { system = system; };
-        stdenv.mkDerivation rec {
+  outputs = { nixpkgs, llvm-ez80, toolchain, ... }:
+    with import nixpkgs { system = "x86_64-linux"; }; {
+      packages.x86_64-linux = rec {
+        llvm-ez80 = stdenv.mkDerivation (final: {
           pname = "llvm-ez80";
           version = "0-unstable";
 
@@ -58,6 +62,45 @@
           doCheck = false;
 
           nativeBuildInputs = [ cmake python3 ];
+        });
+        ce-toolchain = stdenv.mkDerivation {
+          src = toolchain;
+          name = "ce-toolchain";
+          patchPhase = ''
+            substituteInPlace src/common.mk --replace-fail \
+              "INSTALL_DIR := \$(DESTDIR)\$(PREFIX)" "INSTALL_DIR := $out"
+            substituteInPlace makefile --replace-fail \
+              "TOOLS := fasmg convbin convimg convfont cedev-config" \
+              "TOOLS := fasmg cedev-config" --replace-fail \
+             "	\$(Q)\$(call COPY,\$(call NATIVEEXE,tools/convfont/convfont),\$(INSTALL_BIN))
+          	\$(Q)\$(call COPY,\$(call NATIVEEXE,tools/convimg/bin/convimg),\$(INSTALL_BIN))
+          	\$(Q)\$(call COPY,\$(call NATIVEEXE,tools/convbin/bin/convbin),\$(INSTALL_BIN))" ""
+            substituteInPlace tools/convimg/Makefile tools/cedev-config/Makefile \
+              --replace-fail "-static" ""
+          '';
+          makeFlags = "V=1";
+          doCheck = true;
+
+          buildInputs = with pkgs; [
+            convbin convimg convfont
+            llvm-ez80
+            (fasmg.overrideAttrs (final: old: {
+              version = "kd3c";
+              src = fetchzip {
+                url = "https://flatassembler.net/fasmg.${final.version}.zip";
+                sha256 = "sha256-duxune/UjXppKf/yWp7y85rpBn4EIC6JcZPNDhScsEA=";
+                stripRoot = false;
+              };
+            }))
+          ];
+          meta = {
+            description = "Toolchain and libraries for C/C++ programming on the TI-84+ CE calculator series ";
+            maintainers = with lib.maintainers; [ clevor ];
+            mainProgram = "cedev-config";
+            # Until fasmg's package gets updated
+            platforms = [ "x86_64-linux" ];
+          };
         };
-    });
+      };
+    };
 }
