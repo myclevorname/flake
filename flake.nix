@@ -15,9 +15,9 @@
     };
   };
 
-  outputs = { nixpkgs, llvm-ez80, toolchain, ... }:
+  outputs = { nixpkgs, llvm-ez80, toolchain, self }:
     with import nixpkgs { system = "x86_64-linux"; }; {
-      packages.x86_64-linux = rec {
+      packages.x86_64-linux = {
         llvm-ez80 = stdenv.mkDerivation (final: {
           pname = "llvm-ez80";
           version = "0-unstable";
@@ -83,7 +83,7 @@
 
           buildInputs = with pkgs; [
             convbin convimg convfont
-            llvm-ez80
+            self.packages.x86_64-linux.llvm-ez80
             (fasmg.overrideAttrs (final: old: {
               version = "kd3c";
               src = fetchzip {
