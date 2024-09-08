@@ -127,7 +127,7 @@
           installPhase = if attrs ? installPhase then attrs.installPhase else ''
             runHook preInstall
             mkdir -p $out/
-            cp --recursive bin $out
+            cp *.8x* */*.8x* */*/*.8x* */*/*/*.8x* $out/
             runHook postInstall
           '';
           nativeBuildInputs = with pkgsSelf; [ ce-toolchain ];
