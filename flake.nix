@@ -13,9 +13,15 @@
       url = "https://github.com/CE-Programming/toolchain";
       submodules = true;
     };
+    convbin = {
+      flake = false;
+      type = "git";
+      url = "https://github.com/mateoconlechuga/convbin";
+      submodules = true;
+    };
   };
 
-  outputs = { nixpkgs, llvm-ez80, toolchain, self }: let pkgsSelf = self.packages.x86_64-linux; in
+  outputs = { nixpkgs, llvm-ez80, toolchain, convbin, self }@inputs: let pkgsSelf = self.packages.x86_64-linux; in
     with import nixpkgs { system = "x86_64-linux"; }; {
       templates.ce-toolchain = {
         path = ./template;
@@ -30,6 +36,10 @@
             stripRoot = false;
           };
         });
+        convbin-unstable = pkgs.convbin.overrideAttrs {
+          src = inputs.convbin;
+          version = "unstable";
+        };
         llvm-ez80 = stdenv.mkDerivation (final: {
           pname = "llvm-ez80";
           version = "0-unstable";
@@ -91,7 +101,7 @@
               --replace-fail "-static" ""
             substituteInPlace src/makefile.mk \
               --replace-fail "\$(call NATIVEPATH,\$(BIN)/fasmg)" "${pkgsSelf.fasmg-patch}/bin/fasmg" \
-              --replace-fail "\$(call NATIVEPATH,\$(BIN)/convbin)" "${convbin}/bin/convbin" \
+              --replace-fail "\$(call NATIVEPATH,\$(BIN)/convbin)" "${pkgsSelf.convbin-unstable}/bin/convbin" \
               --replace-fail "\$(call NATIVEPATH,\$(BIN)/convimg)" "${convimg}/bin/convimg" \
               --replace-fail "\$(call NATIVEPATH,\$(BIN)/cemu-autotester)" "cemu-autotester" \
               --replace-fail "\$(call NATIVEPATH,\$(BIN)/ez80-clang)" "${pkgsSelf.llvm-ez80}/bin/ez80-clang" \
@@ -101,9 +111,10 @@
           doCheck = true;
 
           buildInputs = with pkgs; [
-            convimg convfont convbin
-            self.packages.x86_64-linux.llvm-ez80
-            self.packages.x86_64-linux.fasmg-patch
+            convimg convfont
+            pkgsSelf.llvm-ez80
+            pkgsSelf.fasmg-patch
+            pkgsSelf.convbin-unstable
           ];
           meta = {
             description = "Toolchain and libraries for C/C++ programming on the TI-84+ CE calculator series ";

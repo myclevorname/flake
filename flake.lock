@@ -1,5 +1,23 @@
 {
   "nodes": {
+    "convbin": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1720998131,
+        "narHash": "sha256-vBE+jaQBQREKWYrOOEFLXZt8stAAqGhxvTZhEC5+Xds=",
+        "ref": "refs/heads/master",
+        "rev": "c142a6c5ebb4e83be29961ccf70080cd169a6091",
+        "revCount": 169,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/mateoconlechuga/convbin"
+      },
+      "original": {
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/mateoconlechuga/convbin"
+      }
+    },
     "llvm-ez80": {
       "flake": false,
       "locked": {
@@ -34,6 +52,7 @@
     },
     "root": {
       "inputs": {
+        "convbin": "convbin",
         "llvm-ez80": "llvm-ez80",
         "nixpkgs": "nixpkgs",
         "toolchain": "toolchain"
