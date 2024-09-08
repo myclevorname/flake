@@ -15,7 +15,7 @@
     };
   };
 
-  outputs = { nixpkgs, llvm-ez80, toolchain, self }:
+  outputs = { nixpkgs, llvm-ez80, toolchain, self }: let pkgsSelf = self.packages.x86_64-linux; in
     with import nixpkgs { system = "x86_64-linux"; }; {
       templates.ce-toolchain = {
         path = ./template;
@@ -90,12 +90,12 @@
             substituteInPlace tools/convimg/Makefile tools/cedev-config/Makefile \
               --replace-fail "-static" ""
             substituteInPlace src/makefile.mk \
-              --replace-fail "\$(call NATIVEPATH,\$(BIN)/fasmg)" "fasmg" \
-              --replace-fail "\$(call NATIVEPATH,\$(BIN)/convbin)" "convbin" \
-              --replace-fail "\$(call NATIVEPATH,\$(BIN)/convimg)" "convimg" \
+              --replace-fail "\$(call NATIVEPATH,\$(BIN)/fasmg)" "${pkgsSelf.fasmg-patch}/bin/fasmg" \
+              --replace-fail "\$(call NATIVEPATH,\$(BIN)/convbin)" "${convbin}/bin/convbin" \
+              --replace-fail "\$(call NATIVEPATH,\$(BIN)/convimg)" "${convimg}/bin/convimg" \
               --replace-fail "\$(call NATIVEPATH,\$(BIN)/cemu-autotester)" "cemu-autotester" \
-              --replace-fail "\$(call NATIVEPATH,\$(BIN)/ez80-clang)" "ez80-clang" \
-              --replace-fail "\$(call NATIVEPATH,\$(BIN)/ez80-link)" "ez80-link" \
+              --replace-fail "\$(call NATIVEPATH,\$(BIN)/ez80-clang)" "${pkgsSelf.llvm-ez80}/bin/ez80-clang" \
+              --replace-fail "\$(call NATIVEPATH,\$(BIN)/ez80-link)" "${pkgsSelf.llvm-ez80}/bin/ez80-link" \
               --replace-fail "CONVBINFLAGS += -b \$(call QUOTE_ARG,\$(COMMENT))" ""
           '';
           doCheck = true;
@@ -119,9 +119,7 @@
             cp --recursive bin $out
             runHook postInstall
           '';
-          nativeBuildInputs =
-            (with pkgs; [ convimg convbin convfont ]) ++
-            (with self.packages.x86_64-linux; [ ce-toolchain fasmg-patch self.packages.x86_64-linux.llvm-ez80 ]);
+          nativeBuildInputs = with pkgsSelf; [ ce-toolchain ];
         });
       };
     };
