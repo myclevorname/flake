@@ -17,7 +17,19 @@
 
   outputs = { nixpkgs, llvm-ez80, toolchain, self }:
     with import nixpkgs { system = "x86_64-linux"; }; {
+      templates.ce-toolchain = {
+        path = ./template;
+        description = "A Hello World program for the TI-84 Plus CE";
+      };
       packages.x86_64-linux = {
+        fasmg-patch = pkgs.fasmg.overrideAttrs (final: old: {
+          version = "kd3c";
+          src = fetchzip {
+            url = "https://flatassembler.net/fasmg.${final.version}.zip";
+            sha256 = "sha256-duxune/UjXppKf/yWp7y85rpBn4EIC6JcZPNDhScsEA=";
+            stripRoot = false;
+          };
+        });
         llvm-ez80 = stdenv.mkDerivation (final: {
           pname = "llvm-ez80";
           version = "0-unstable";
@@ -77,30 +89,40 @@
           	\$(Q)\$(call COPY,\$(call NATIVEEXE,tools/convbin/bin/convbin),\$(INSTALL_BIN))" ""
             substituteInPlace tools/convimg/Makefile tools/cedev-config/Makefile \
               --replace-fail "-static" ""
+            substituteInPlace src/makefile.mk \
+              --replace-fail "\$(call NATIVEPATH,\$(BIN)/fasmg)" "fasmg" \
+              --replace-fail "\$(call NATIVEPATH,\$(BIN)/convbin)" "convbin" \
+              --replace-fail "\$(call NATIVEPATH,\$(BIN)/convimg)" "convimg" \
+              --replace-fail "\$(call NATIVEPATH,\$(BIN)/cemu-autotester)" "cemu-autotester" \
+              --replace-fail "\$(call NATIVEPATH,\$(BIN)/ez80-clang)" "ez80-clang" \
+              --replace-fail "\$(call NATIVEPATH,\$(BIN)/ez80-link)" "ez80-link" \
+              --replace-fail "CONVBINFLAGS += -b \$(call QUOTE_ARG,\$(COMMENT))" ""
           '';
-          makeFlags = "V=1";
           doCheck = true;
 
           buildInputs = with pkgs; [
-            convbin convimg convfont
+            convimg convfont convbin
             self.packages.x86_64-linux.llvm-ez80
-            (fasmg.overrideAttrs (final: old: {
-              version = "kd3c";
-              src = fetchzip {
-                url = "https://flatassembler.net/fasmg.${final.version}.zip";
-                sha256 = "sha256-duxune/UjXppKf/yWp7y85rpBn4EIC6JcZPNDhScsEA=";
-                stripRoot = false;
-              };
-            }))
+            self.packages.x86_64-linux.fasmg-patch
           ];
           meta = {
             description = "Toolchain and libraries for C/C++ programming on the TI-84+ CE calculator series ";
             maintainers = with lib.maintainers; [ clevor ];
             mainProgram = "cedev-config";
-            # Until fasmg's package gets updated
-            platforms = [ "x86_64-linux" ];
+            platforms = [ "x86_64-linux" "x86_64-darwin" ];
           };
         };
+        mkDerivation = attrs: stdenv.mkDerivation (attrs // {
+          installPhase = if attrs ? installPhase then attrs.installPhase else ''
+            runHook preInstall
+            mkdir -p $out/
+            cp --recursive bin $out
+            runHook postInstall
+          '';
+          nativeBuildInputs =
+            (with pkgs; [ convimg convbin convfont ]) ++
+            (with self.packages.x86_64-linux; [ ce-toolchain fasmg-patch self.packages.x86_64-linux.llvm-ez80 ]);
+        });
       };
     };
 }
