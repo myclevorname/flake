@@ -85,6 +85,16 @@
 
           nativeBuildInputs = [ cmake python3 ];
         });
+        ce-libs = pkgsSelf.ce-toolchain.overrideAttrs {
+          name = "clibs.8xg";
+          postBuild = ''
+            make libs $makeFlags
+          '';
+          installPhase = ''
+            cp clibs.8xg $out
+          '';
+        };
+
         ce-toolchain = stdenv.mkDerivation {
           src = toolchain;
           name = "ce-toolchain";
@@ -94,9 +104,10 @@
             substituteInPlace makefile --replace-fail \
               "TOOLS := fasmg convbin convimg convfont cedev-config" \
               "TOOLS := fasmg cedev-config" --replace-fail \
-             "	\$(Q)\$(call COPY,\$(call NATIVEEXE,tools/convfont/convfont),\$(INSTALL_BIN))
+              "	\$(Q)\$(call COPY,\$(call NATIVEEXE,tools/convfont/convfont),\$(INSTALL_BIN))
           	\$(Q)\$(call COPY,\$(call NATIVEEXE,tools/convimg/bin/convimg),\$(INSTALL_BIN))
-          	\$(Q)\$(call COPY,\$(call NATIVEEXE,tools/convbin/bin/convbin),\$(INSTALL_BIN))" ""
+          	\$(Q)\$(call COPY,\$(call NATIVEEXE,tools/convbin/bin/convbin),\$(INSTALL_BIN))" "" \
+              --replace-fail "tools/convbin/bin/" ""
             substituteInPlace tools/convimg/Makefile tools/cedev-config/Makefile \
               --replace-fail "-static" ""
             substituteInPlace src/makefile.mk \
@@ -109,6 +120,7 @@
               --replace-fail "CONVBINFLAGS += -b \$(call QUOTE_ARG,\$(COMMENT))" ""
           '';
           doCheck = true;
+          enableParallelBuilding = true;
 
           buildInputs = with pkgs; [
             convimg convfont
@@ -124,10 +136,12 @@
           };
         };
         mkDerivation = attrs: stdenv.mkDerivation (attrs // {
-          buildPhase = if attrs ? buildPhase then attrs.buildPhase else ''
-            make gfx $makeFlags || true
-            make $makeFlags
+          buildPhase = if attrs? buildPhase then attrs.buildPhase else ''
+            runHook preBuild
+            make gfx all $makeFlags
+            runHook postBuild
           '';
+          enableParallelBuilding = true;
           installPhase = if attrs ? installPhase then attrs.installPhase else ''
             runHook preInstall
             mkdir -p $out/
