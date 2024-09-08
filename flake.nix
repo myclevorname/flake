@@ -124,6 +124,10 @@
           };
         };
         mkDerivation = attrs: stdenv.mkDerivation (attrs // {
+          buildPhase = if attrs ? buildPhase then attrs.buildPhase else ''
+            make gfx $makeFlags || true
+            make $makeFlags
+          '';
           installPhase = if attrs ? installPhase then attrs.installPhase else ''
             runHook preInstall
             mkdir -p $out/
