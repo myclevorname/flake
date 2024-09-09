@@ -142,7 +142,8 @@
         mkDerivation = attrs: stdenv.mkDerivation (attrs // {
           buildPhase = if attrs? buildPhase then attrs.buildPhase else ''
             runHook preBuild
-            make gfx all $makeFlags
+            make gfx $makeFlags || true
+            make $makeFlags
             runHook postBuild
           '';
           enableParallelBuilding = true;
