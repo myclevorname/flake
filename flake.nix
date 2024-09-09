@@ -150,9 +150,11 @@
             runHook preInstall
             mkdir -p $out/
             cp *.8x* */*.8x* */*/*.8x* */*/*/*.8x* $out/
+            cp README* readme* license* LICENSE* LISEZMOI* lisezmoi* $out
             runHook postInstall
           '';
-          nativeBuildInputs = with pkgsSelf; [ ce-toolchain ];
+          nativeBuildInputs = let toolchain = [ pkgsSelf.ce-toolchain ]; in
+            if attrs ? nativeBuildInputs then attrs.nativeBuildInputs ++ toolchain else toolchain;
         });
         decbot4 = buildDotnetModule rec {
           name = "decbot4";
