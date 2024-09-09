@@ -1,0 +1,5 @@
+result*
+*.8xg
+template/flake.lock
+template/result*
+template/*.8xg

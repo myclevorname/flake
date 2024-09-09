@@ -18,6 +18,22 @@
         "url": "https://github.com/mateoconlechuga/convbin"
       }
     },
+    "decbot4Src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1723476330,
+        "narHash": "sha256-hnbm14A222Y7zZ+KRcLpJN3t93/CB7eB2H0cjp2IKEM=",
+        "owner": "cemetech",
+        "repo": "decbot4",
+        "rev": "ab7b0bb7662d5bf750d68f15370cb78ad828a80a",
+        "type": "gitlab"
+      },
+      "original": {
+        "owner": "cemetech",
+        "repo": "decbot4",
+        "type": "gitlab"
+      }
+    },
     "llvm-ez80": {
       "flake": false,
       "locked": {
@@ -53,6 +69,7 @@
     "root": {
       "inputs": {
         "convbin": "convbin",
+        "decbot4Src": "decbot4Src",
         "llvm-ez80": "llvm-ez80",
         "nixpkgs": "nixpkgs",
         "toolchain": "toolchain"

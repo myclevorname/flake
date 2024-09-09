@@ -19,9 +19,13 @@
       url = "https://github.com/mateoconlechuga/convbin";
       submodules = true;
     };
+    decbot4Src = {
+      url = "gitlab:cemetech/decbot4";
+      flake = false;
+    };
   };
 
-  outputs = { nixpkgs, llvm-ez80, toolchain, convbin, self }@inputs: let pkgsSelf = self.packages.x86_64-linux; in
+  outputs = { nixpkgs, llvm-ez80, toolchain, convbin, self, decbot4Src }@inputs: let pkgsSelf = self.packages.x86_64-linux; in
     with import nixpkgs { system = "x86_64-linux"; }; {
       templates.ce-toolchain = {
         path = ./template;
@@ -150,6 +154,18 @@
           '';
           nativeBuildInputs = with pkgsSelf; [ ce-toolchain ];
         });
+        decbot4 = buildDotnetModule rec {
+          name = "decbot4";
+          src = "${decbot4Src}/Cemetech.DecBot4";
+          patchPhase = ''
+            substituteInPlace Program.cs --replace-fail "decbot.json" "$out/lib/decbot.json"
+          '';
+          selfContainedBuild = true;
+          dotnet-sdk = dotnetCorePackages.sdk_8_0;
+          dotnet-runtime = dotnetCorePackages.runtime_8_0;
+          nugetDeps = ./decbot4-deps.nix;
+          meta.mainProgram = "Cemetech.DecBot4.ConsoleApp";
+        };
       };
     };
 }
