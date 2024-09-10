@@ -156,7 +156,16 @@
             cp README* readme* license* LICENSE* LISEZMOI* lisezmoi* $out
             runHook postInstall
           '';
-          nativeBuildInputs = let toolchain = [ pkgsSelf.ce-toolchain ]; in
+          nativeBuildInputs = let
+            toolchain = with pkgsSelf; [
+              ce-toolchain
+              convbin-unstable
+              pkgs.convimg
+              pkgs.convfont
+              pkgsSelf.llvm-ez80
+              fasmg
+            ];
+          in
             if attrs ? nativeBuildInputs then attrs.nativeBuildInputs ++ toolchain else toolchain;
         });
       };
