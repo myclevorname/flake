@@ -23,15 +23,18 @@
       url = "gitlab:cemetech/decbot4";
       flake = false;
     };
+    flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { nixpkgs, llvm-ez80, toolchain, convbin, self, decbot4Src }@inputs: let pkgsSelf = self.packages.x86_64-linux; in
-    with import nixpkgs { system = "x86_64-linux"; }; {
+  outputs = { nixpkgs, llvm-ez80, toolchain, convbin, self, decbot4Src, flake-utils }@inputs:
+    nixpkgs.lib.recursiveUpdate (flake-utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" ] (system:
+      let pkgsSelf = self.packages.${system}; in
+    with import nixpkgs { inherit system; }; {
       templates.ce-toolchain = {
         path = ./template;
         description = "A Hello World program for the TI-84 Plus CE";
       };
-      packages.x86_64-linux = {
+      packages = {
         fasmg-patch = pkgs.fasmg.overrideAttrs (final: old: {
           version = "kd3c";
           src = fetchzip {
@@ -98,7 +101,6 @@
             cp clibs.8xg $out
           '';
         };
-
         ce-toolchain = stdenv.mkDerivation {
           src = toolchain;
           name = "ce-toolchain";
@@ -157,18 +159,19 @@
           nativeBuildInputs = let toolchain = [ pkgsSelf.ce-toolchain ]; in
             if attrs ? nativeBuildInputs then attrs.nativeBuildInputs ++ toolchain else toolchain;
         });
-        decbot4 = buildDotnetModule rec {
-          name = "decbot4";
-          src = "${decbot4Src}/Cemetech.DecBot4";
-          patchPhase = ''
-            substituteInPlace Program.cs --replace-fail "decbot.json" "$out/lib/decbot.json"
-          '';
-          selfContainedBuild = true;
-          dotnet-sdk = dotnetCorePackages.sdk_8_0;
-          dotnet-runtime = dotnetCorePackages.runtime_8_0;
-          nugetDeps = ./decbot4-deps.nix;
-          meta.mainProgram = "Cemetech.DecBot4.ConsoleApp";
-        };
       };
-    };
+    })) (flake-utils.lib.eachDefaultSystem (system: with import nixpkgs { inherit system; }; {
+      packages.decbot4 = buildDotnetModule rec {
+        name = "decbot4";
+        src = "${decbot4Src}/Cemetech.DecBot4";
+        patchPhase = ''
+          substituteInPlace Program.cs --replace-fail "decbot.json" "$out/lib/decbot.json"
+        '';
+        selfContainedBuild = true;
+        dotnet-sdk = dotnetCorePackages.sdk_8_0;
+        dotnet-runtime = dotnetCorePackages.runtime_8_0;
+        nugetDeps = ./decbot4-deps.nix;
+        meta.mainProgram = "Cemetech.DecBot4.ConsoleApp";
+      };
+    }));
 }
